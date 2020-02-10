@@ -1,11 +1,16 @@
-import { antonymsNode, searchWordNode, resultsBlock, examplesNode, synonymsNode, definitionsNode, searchField, searchButton } from "/js/variables.js"
+import Nodes from "./variables.js"
 
-searchButton.addEventListener("click", sendJSONRequestsForResults);
+Nodes.searchButton.addEventListener("click", sendJSONRequestsForResults);
 
 async function sendJSONRequestsForResults() {
-    const searchWord = searchField.value;
+    const searchWord = Nodes.searchField.value;
     try {
-        const results = await Promise.all([sendJSONRequestForDefinitions(searchWord), sendJSONRequestForSynonyms(searchWord), sendJSONRequestForAntonyms(searchWord), sendJSONRequestForExamples(searchWord)]);
+        const results = await Promise.all([
+            sendJSONRequest({ searchWord, requestTitle: "definitions" }),
+            sendJSONRequest({ searchWord, requestTitle: "synonyms" }),
+            sendJSONRequest({ searchWord, requestTitle: "antonyms" }),
+            sendJSONRequest({ searchWord, requestTitle: "examples" })
+        ]);
         processDataForDefinitions(results[0]);
         processDataForSynonyms(results[1]);
         processDataForAntonyms(results[2]);
@@ -14,44 +19,19 @@ async function sendJSONRequestsForResults() {
     catch (err) {
         console.error(err);
     }
-    resultsBlock.classList.remove("d-none");
+    Nodes.resultsBlock.classList.remove("d-none");
 }
 
-function sendJSONRequestForDefinitions(searchWord) {
-    const url = `https://wordsapiv1.p.rapidapi.com/words/${searchWord}/definitions`;
-    return sendJSONRequest(url);
-}
-
-function sendJSONRequestForSynonyms(searchWord) {
-    const url = `https://wordsapiv1.p.rapidapi.com/words/${searchWord}/synonyms`;
-    return sendJSONRequest(url);
-}
-
-function sendJSONRequestForAntonyms(searchWord) {
-    const url = `https://wordsapiv1.p.rapidapi.com/words/${searchWord}/antonyms`;
-    return sendJSONRequest(url);
-}
-
-function sendJSONRequestForExamples(searchWord) {
-    const url = `https://wordsapiv1.p.rapidapi.com/words/${searchWord}/examples`;
-    return sendJSONRequest(url);
-}
-
-async function sendJSONRequest(url) {
+async function sendJSONRequest({ searchWord, requestTitle }) {
     try {
-        const response = await fetch(url, {
+        const response = await fetch(`https://wordsapiv1.p.rapidapi.com/words/${searchWord}/${requestTitle}`, {
             "method": "GET",
             "headers": {
                 "x-rapidapi-host": "wordsapiv1.p.rapidapi.com",
                 "x-rapidapi-key": "5d97fee4a9mshd416ddf0f7afa3ap1344fdjsn8b4d313c9c07"
             },
         });
-        if (response.status === 404) {
-            throw new Error("Error while sending JSON request");
-        }
-        else {
-            return response.json();
-        }
+        return response.status === 404 ? new Error("Error while sending JSON request") : response.json();
     }
     catch (err) {
         console.error(err);
@@ -60,29 +40,21 @@ async function sendJSONRequest(url) {
 
 function processDataForDefinitions(dataObj) {
     const { word, definitions } = dataObj;
-    searchWordNode.innerHTML = `<u>${word.toUpperCase()}</u>`;
-    definitionsNode.innerHTML = `<em>${definitions.map((item, index) => `${index + 1}) ${item.definition}`).join("; ")}</em>`;
+    Nodes.searchWordNode.innerHTML = `<u>${word.toUpperCase()}</u>`;
+    Nodes.definitionsNode.innerHTML = `<em>${definitions.map((item, index) => `${index + 1}) ${item.definition}`).join("; ")}</em>`;
 }
 
 function processDataForSynonyms(dataObj) {
     const { word, synonyms } = dataObj;
-    if (synonyms.length === 0) {
-        synonymsNode.textContent = `Synonyms for "${word}" were not founded`;
-    } else {
-        synonymsNode.innerHTML = `<strong>Synonyms:</strong> <em>${synonyms.join(", ")}</em>`;
-    }
+    Nodes.synonymsNode.innerHTML = synonyms.length === 0 ? `Synonyms for "${word}" were not founded` : `<strong>Synonyms:</strong> <em>${synonyms.join(", ")}</em>`;
 }
 
 function processDataForAntonyms(dataObj) {
     const { word, antonyms } = dataObj;
-    if (antonyms.length === 0) {
-        antonymsNode.textContent = `Antonyms for "${word}" were not founded`;
-    } else {
-        antonymsNode.innerHTML = `<strong>Antonyms:</strong> <em>${antonyms.join(", ")}</em>`;
-    }
+    Nodes.antonymsNode.innerHTML = antonyms.length === 0 ? `Antonyms for "${word}" were not founded` : `<strong>Antonyms:</strong> <em>${antonyms.join(", ")}</em>`;
 }
 
 function processDataForExamples(dataObj) {
-    const { examples } = dataObj;
-    examplesNode.innerHTML = `<strong>Using (examples):</strong> <em>${examples.join("; ")}</em>`;
+    const { word, examples } = dataObj;
+    Nodes.examplesNode.innerHTML = examples.length === 0 ? `Examples for "${word}" were not founded` : `<strong>Using (examples):</strong> <em>${examples.join("; ")}</em>`;
 }
